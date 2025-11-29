@@ -1,43 +1,47 @@
 import socket
 import threading
 import time
-import os
 
-SERVER_HOST = "127.0.0.1"
-SERVER_PORT = 6000
+running = True  # controls heartbeat thread
 
 
-def heartbeat_thread(sock):
-    while True:
-        sock.sendto("HEARTBEAT".encode(), (SERVER_HOST, SERVER_PORT))
+def heartbeat(sock, server_addr):
+    """Send heartbeat every 5 seconds until stopped."""
+    global running
+    while running:
+        sock.sendto(b"heartbeat", server_addr)
         time.sleep(5)
 
 
 def main():
-    sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+    global running
 
-    threading.Thread(target=heartbeat_thread, args=(sock,), daemon=True).start()
+    server_host = "127.0.0.1"
+    server_port = 8080
+    server_addr = (server_host, server_port)
 
-    print("[CLIENT] Heartbeat started. Waiting for server commands...")
+    client = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+
+    # Start heartbeat thread
+    th = threading.Thread(target=heartbeat, args=(client, server_addr))
+    th.daemon = True
+    th.start()
+
+    print("UDP client started. Type messages.")
+    print("Type 'exit' to stop client and heartbeat.\n")
 
     while True:
-        data, _ = sock.recvfrom(1024)
-        cmd = data.decode()
+        msg = input("> ")
 
-        if cmd == "NOOP":
-            continue
-
-        print(f"[CLIENT] Received command: {cmd}")
-
-        if cmd.lower() == "exit":
-            print("[CLIENT] Exit command received. Stopping client.")
+        if msg == "exit":
+            running = False  # stop heartbeat
+            client.sendto(b"exit", server_addr)
+            time.sleep(0.2)  # small delay to ensure last packet is sent
+            client.close()
+            print("Client closed.")
             break
 
-        # Execute command on client system
-        output = os.popen(cmd).read()
-        print(f"[CLIENT] Output:\n{output}")
-
-    sock.close()
+        client.sendto(msg.encode(), server_addr)
 
 
 if __name__ == "__main__":
