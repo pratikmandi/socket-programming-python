@@ -28,17 +28,17 @@ def main():
     th.start()
 
     print("UDP client started. Type messages.")
-    print("Type 'exit' to stop client and heartbeat.\n")
+    print("Type 'exit' to stop client and also stop server.\n")
 
     while True:
         msg = input("> ")
 
         if msg == "exit":
-            running = False  # stop heartbeat
+            running = False  # stop heartbeat thread
             client.sendto(b"exit", server_addr)
-            time.sleep(0.2)  # small delay to ensure last packet is sent
+            time.sleep(0.2)  # ensure last message is sent
             client.close()
-            print("Client closed.")
+            print("Client closed. Server will stop too.")
             break
 
         client.sendto(msg.encode(), server_addr)

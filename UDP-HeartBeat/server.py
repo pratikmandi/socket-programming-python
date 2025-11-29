@@ -17,7 +17,11 @@ def main():
         print(f"From {addr}: {message}")
 
         if message == "exit":
-            print("Client has exited (but server stays running).")
+            print("Client exited. Stopping server.")
+            break
+
+    server.close()
+    print("Server closed.")
 
 
 if __name__ == "__main__":
